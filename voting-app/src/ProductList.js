@@ -4,7 +4,7 @@ import Product from './Product';
 class ProductList extends Component {
     handleUpVoteById(productId) {
       const nextProducts = this.state.products.map(p=> {
-        if(p.id == productId)
+        if(p.id === productId)
           return Object.assign({}, p, { votes: p.votes+1 });
         else return p;
       });
