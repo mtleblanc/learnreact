@@ -24,18 +24,32 @@ class TimerDashboard extends Component {
 
 class TimerList extends Component {
   render() {
-    return ["#ff0000", "#00ff00", "#0000ff"].map((c,k) => <Timer title={c} project={k} editing={k%2 === 0} />);
+    return ["#ff0000", "#00ff00", "#0000ff"].map((c,k) => <Timer key={c} title={c} project={k} editing={k%2 === 0} />);
   }
 }
 
 class TimerForm extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      isOpen: false,
+    };
+    this.openForm = this.openForm.bind(this);
+    this.closeForm = this.closeForm.bind(this);
+  }
+  openForm() {
+    this.setState({isOpen: true});
+  }
+  closeForm() {
+    this.setState({isOpen:false});
+  }
   render() {
-    if(this.props.isOpen)
-      return <TimerEditor />;
+    if(this.state.isOpen)
+      return <TimerEditor closeFunc={this.closeForm} />;
     else
       return (
         <div className='ui basic content center aligned segment'>
-          <button className='ui basic button icon'>
+          <button className='ui basic button icon' onClick={this.openForm}>
             <i className='plus icon' />
           </button>
         </div>
@@ -44,14 +58,29 @@ class TimerForm extends Component {
 }
 
 class Timer extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      isOpen: false,
+    };
+    this.openForm = this.openForm.bind(this);
+    this.closeForm = this.closeForm.bind(this);
+  }
+  openForm() {
+    this.setState({isOpen: true});
+  }
+  closeForm() {
+    this.setState({isOpen:false});
+  }
   render() {
-    if(this.props.editing)
-      return <TimerEditor title={this.props.title} project={this.props.project}/>;
+    if(this.state.isOpen)
+      return <TimerEditor title={this.props.title} project={this.props.project} closeFunc={this.closeForm} />;
     else
       return <TimerDisplay 
                 title={this.props.title}
                 project={this.props.project}
                 elapsed={209382}
+                editFunc={this.openForm}
               />;
   }
 }
@@ -72,10 +101,10 @@ class TimerEditor extends Component {
               <input type='text' defaultValue={this.props.project} />
             </div>
             <div className='ui two bottom attached buttons'>
-              <button className='ui basic blue button'>
+              <button className='ui basic blue button' onClick={this.props.closeFunc}>
                 {submitText}
               </button>
-              <button className='ui basic button red'>
+              <button className='ui basic button red' onClick={this.props.closeFunc}>
                 Cancel
               </button>
             </div>
@@ -104,7 +133,7 @@ class TimerDisplay extends Component {
             </h2>
           </div>
           <div className='extra content'>
-            <span className='right floated edit icon'>
+            <span className='right floated edit icon' onClick={this.props.editFunc}>
               <i className='edit icon' />
             </span>
             <span className='right floated trash icon'>
