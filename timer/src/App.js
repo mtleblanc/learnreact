@@ -83,7 +83,8 @@ class TimerList extends Component {
         elapsed={t.elapsed}
         updateFunc={this.props.updateFunc}
         deleteFunc={this.props.deleteFunc}
-      />);
+      />
+      );
   }
 }
 
@@ -142,13 +143,13 @@ class Timer extends Component {
         updateFunc={this.props.updateFunc} />;
     else
       return <TimerDisplay
-                id={this.props.id}
-                title={this.props.title}
-                project={this.props.project}
-                elapsed={this.props.elapsed}
-                editFunc={this.openForm}
-                deleteFunc={this.props.deleteFunc}
-              />;
+        id={this.props.id}
+        title={this.props.title}
+        project={this.props.project}
+        elapsed={this.props.elapsed}
+        editFunc={this.openForm}
+        deleteFunc={this.props.deleteFunc}
+      />;
   }
 }
 
