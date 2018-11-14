@@ -19,41 +19,64 @@ class TimerDashboard extends Component {
           title: "Timer 1",
           project: "Watch Twitch",
           elapsed: 278342,
+          startTime: new Date(),
         },
         {
           id: 2,
           title: "Timer 2",
           project: "Learn React",
           elapsed: 6464124,
+          startTime: null,
         },
         {
           id: 3,
           title: "Timer 3",
           project: "Recite Judge Dredd from memory",
           elapsed: 99999999999,
+          startTime: null,
         },
       ]
     }
     this.updateTimer = this.updateTimer.bind(this);
     this.addTimer = this.addTimer.bind(this);
     this.deleteTimer = this.deleteTimer.bind(this);
+    this.toggleTimer = this.toggleTimer.bind(this);
   }
 
   updateTimer(timer) {
     const newTimers = this.state.timers.map(t=>
-      t.id === timer.id ? timer : t);
+      t.id === timer.id ? Object.assign({}, t, timer) : t);
     this.setState({timers: newTimers});
   }
 
   addTimer(timer) {
     const newId = Math.max.apply(null, this.state.timers.map(t=>t.id).concat(-1))+ 1;
-    const newTimers = this.state.timers.concat(Object.assign({}, timer, {id: newId, elapsed: 0}));
+    const newTimers = this.state.timers.concat(Object.assign({}, timer, {id: newId, elapsed: 0, startTime: null}));
     this.setState({timers: newTimers});
   }
 
   deleteTimer(id) {
     const newTimers = this.state.timers.filter(t => t.id !== id);
     this.setState({timers: newTimers});
+  }
+
+  toggleTimer(id) {
+    this.setState({timers:
+      this.state.timers.map(t=> {
+        if(t.id === id) {
+          let newTimer = Object.assign({}, t);
+          if(newTimer.startTime === null)
+            newTimer.startTime = new Date();
+          else {
+            const newElapsed = new Date() - newTimer.startTime;
+            newTimer.elapsed += newElapsed;
+            newTimer.startTime = null;
+          }
+          return newTimer;
+        }
+        else return t;
+      })
+    })
   }
 
   render() {
@@ -64,6 +87,7 @@ class TimerDashboard extends Component {
             timers={this.state.timers} 
             updateFunc={this.updateTimer}
             deleteFunc={this.deleteTimer}
+            toggleFunc={this.toggleTimer}
           />
           <TimerForm isOpen={false} updateFunc={this.addTimer} />
         </div>
@@ -77,12 +101,10 @@ class TimerList extends Component {
     return this.props.timers.map(t=>
       <Timer 
         key={t.id}
-        id={t.id}
-        title={t.title}
-        project={t.project}
-        elapsed={t.elapsed}
+        timer={t}
         updateFunc={this.props.updateFunc}
         deleteFunc={this.props.deleteFunc}
+        toggleFunc={this.props.toggleFunc}
       />
       );
   }
@@ -125,6 +147,7 @@ class Timer extends Component {
     };
     this.openForm = this.openForm.bind(this);
     this.closeForm = this.closeForm.bind(this);
+    this.toggleFunc = () => this.props.toggleFunc(this.props.timer.id);
   }
   openForm() {
     this.setState({isOpen: true});
@@ -135,20 +158,17 @@ class Timer extends Component {
   render() {
     if(this.state.isOpen)
       return <TimerEditor 
-        id={this.props.id}
-        title={this.props.title}
-        project={this.props.project} 
-        elapsed={this.props.elapsed}
+        id={this.props.timer.id}
+        title={this.props.timer.title}
+        project={this.props.timer.project}
         closeFunc={this.closeForm} 
         updateFunc={this.props.updateFunc} />;
     else
       return <TimerDisplay
-        id={this.props.id}
-        title={this.props.title}
-        project={this.props.project}
-        elapsed={this.props.elapsed}
+        timer={this.props.timer}
         editFunc={this.openForm}
         deleteFunc={this.props.deleteFunc}
+        toggleFunc={this.toggleFunc}
       />;
   }
 }
@@ -170,7 +190,6 @@ class TimerEditor extends Component {
       id: this.props.id,
       title: this.state.title,
       project: this.state.project,
-      elapsed: this.props.elapsed,
     });
     this.props.closeFunc();
   }
@@ -184,7 +203,7 @@ class TimerEditor extends Component {
   }
 
   render() {
-    const submitText = this.props.title ? 'Update' : 'Create';
+    const submitText = this.props.id ? 'Update' : 'Create';
     return (
       <div className='ui centered card'>
         <div className='content'>
@@ -222,16 +241,32 @@ class TimerDisplay extends Component {
     this.props.deleteFunc(this.props.id);
   }
 
+  componentDidMount() {
+    this.forceUpdateInterval = setInterval(()=>this.forceUpdate(), 50);
+  }
+
+  componentWillUnmount() {
+    clearInterval(this.forceUpdateInterval);
+  }
+
   render() {
-    const elapsedString = helpers.renderTime(this.props.elapsed);
+    const timer = this.props.timer;
+    let totalElapsed = timer.elapsed;
+    if(timer.startTime != null)
+    {
+      const now = new Date();
+      const currentElapsed = now - timer.startTime;
+      totalElapsed += currentElapsed;
+    }
+    const elapsedString = helpers.renderTime(totalElapsed);
     return (
       <div className='ui centered card'>
         <div className='content'>
           <div className='header'>
-            {this.props.title}
+            {this.props.timer.title}
           </div>
           <div className='meta'>
-            {this.props.project}
+            {this.props.timer.project}
           </div>
           <div className='centered aligned description'>
             <h2>
@@ -247,11 +282,24 @@ class TimerDisplay extends Component {
             </span>
           </div>
         </div>
-        <div className='ui bottom attached blue basic button'>
-          Start
-        </div>
+        <TimerStartStop
+          isRunning={this.props.timer.startTime !== null}
+          toggleFunc={this.props.toggleFunc}
+          />
       </div>
       );
+  }
+}
+
+class TimerStartStop extends Component {
+  render() {
+    const color = this.props.isRunning ? 'red' : 'blue';
+    const text = this.props.isRunning ? 'Stop' : 'Start';
+    return (
+        <div className={'ui bottom attached ' + color + ' basic button'} onClick={this.props.toggleFunc} >
+          {text}
+        </div>
+        );
   }
 }
 
