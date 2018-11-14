@@ -238,7 +238,7 @@ class TimerDisplay extends Component {
   }
 
   deleteThis() {
-    this.props.deleteFunc(this.props.id);
+    this.props.deleteFunc(this.props.timer.id);
   }
 
   componentDidMount() {
