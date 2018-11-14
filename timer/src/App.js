@@ -10,9 +10,7 @@ class App extends Component {
 }
 
 class TimerDashboard extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
+  state = {
       timers: [
         {
           id: 1,
@@ -36,31 +34,24 @@ class TimerDashboard extends Component {
           startTime: null,
         },
       ]
-    }
-    this.updateTimer = this.updateTimer.bind(this);
-    this.addTimer = this.addTimer.bind(this);
-    this.deleteTimer = this.deleteTimer.bind(this);
-    this.toggleTimer = this.toggleTimer.bind(this);
-  }
+  };
 
-  updateTimer(timer) {
+  updateTimer = (timer) => {
     const newTimers = this.state.timers.map(t=>
       t.id === timer.id ? Object.assign({}, t, timer) : t);
     this.setState({timers: newTimers});
-  }
+  };
 
-  addTimer(timer) {
-    const newId = Math.max.apply(null, this.state.timers.map(t=>t.id).concat(-1))+ 1;
-    const newTimers = this.state.timers.concat(Object.assign({}, timer, {id: newId, elapsed: 0, startTime: null}));
-    this.setState({timers: newTimers});
-  }
+  addTimer = (timer) => {
+    const newTimer = Object.assign({}, timer, {id: helpers.uuid(), elapsed: 0, startTime: null});
+    this.setState( st => ({ timers: st.timers.concat(newTimer) }) );
+  };
 
-  deleteTimer(id) {
-    const newTimers = this.state.timers.filter(t => t.id !== id);
-    this.setState({timers: newTimers});
-  }
+  deleteTimer = (id) => () => {
+    this.setState(st => ({ timers: st.timers.filter(t => t.id !== id) }));
+  };
 
-  toggleTimer(id) {
+  toggleTimer = (id) => () => {
     this.setState({timers:
       this.state.timers.map(t=> {
         if(t.id === id) {
@@ -77,7 +68,7 @@ class TimerDashboard extends Component {
         else return t;
       })
     })
-  }
+  };
 
   render() {
     return (
@@ -103,28 +94,18 @@ class TimerList extends Component {
         key={t.id}
         timer={t}
         updateFunc={this.props.updateFunc}
-        deleteFunc={this.props.deleteFunc}
-        toggleFunc={this.props.toggleFunc}
+        deleteFunc={this.props.deleteFunc(t.id)}
+        toggleFunc={this.props.toggleFunc(t.id)}
       />
       );
   }
 }
 
 class TimerForm extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      isOpen: false,
-    };
-    this.openForm = this.openForm.bind(this);
-    this.closeForm = this.closeForm.bind(this);
-  }
-  openForm() {
-    this.setState({isOpen: true});
-  }
-  closeForm() {
-    this.setState({isOpen:false});
-  }
+  state = { isOpen: false };
+  openForm = () => this.setState({isOpen: true});
+  closeForm = () => this.setState({isOpen:false});
+
   render() {
     if(this.state.isOpen)
       return <TimerEditor closeFunc={this.closeForm} updateFunc={this.props.updateFunc}/>;
@@ -140,21 +121,10 @@ class TimerForm extends Component {
 }
 
 class Timer extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      isOpen: false,
-    };
-    this.openForm = this.openForm.bind(this);
-    this.closeForm = this.closeForm.bind(this);
-    this.toggleFunc = () => this.props.toggleFunc(this.props.timer.id);
-  }
-  openForm() {
-    this.setState({isOpen: true});
-  }
-  closeForm() {
-    this.setState({isOpen:false});
-  }
+  state = { isOpen: false };
+  openForm = () => this.setState({isOpen: true});
+  closeForm = () => this.setState({isOpen:false});
+
   render() {
     if(this.state.isOpen)
       return <TimerEditor 
@@ -168,39 +138,28 @@ class Timer extends Component {
         timer={this.props.timer}
         editFunc={this.openForm}
         deleteFunc={this.props.deleteFunc}
-        toggleFunc={this.toggleFunc}
+        toggleFunc={this.props.toggleFunc}
       />;
   }
 }
 
 class TimerEditor extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
+  state = {
       title: this.props.title || '',
       project: this.props.project || '',
-    }
-    this.updateTitle = this.updateTitle.bind(this);
-    this.updateTimer = this.updateTimer.bind(this);
-    this.updateProject = this.updateProject.bind(this);
-  }
+    };
+  updateTitle = (evt) => this.setState({title: evt.target.value || ''});
+  updateProject = (evt) => this.setState({project: evt.target.value || ''});
+  
 
-  updateTimer() {
+  updateTimer = () => {
     this.props.updateFunc({
       id: this.props.id,
       title: this.state.title,
       project: this.state.project,
     });
     this.props.closeFunc();
-  }
-
-  updateTitle(evt) {
-    this.setState({title: evt.target.value || ''});
-  }
-
-  updateProject(evt) {
-    this.setState({project: evt.target.value || ''});
-  }
+  };
 
   render() {
     const submitText = this.props.id ? 'Update' : 'Create';
@@ -232,15 +191,6 @@ class TimerEditor extends Component {
 }
 
 class TimerDisplay extends Component {
-  constructor(props) {
-    super(props);
-    this.deleteThis = this.deleteThis.bind(this);
-  }
-
-  deleteThis() {
-    this.props.deleteFunc(this.props.timer.id);
-  }
-
   componentDidMount() {
     this.forceUpdateInterval = setInterval(()=>this.forceUpdate(), 50);
   }
@@ -277,7 +227,7 @@ class TimerDisplay extends Component {
             <span className='right floated edit icon' onClick={this.props.editFunc}>
               <i className='edit icon' />
             </span>
-            <span className='right floated trash icon' onClick={this.deleteThis}>
+            <span className='right floated trash icon' onClick={this.props.deleteFunc}>
               <i className='trash icon' />
             </span>
           </div>
@@ -314,7 +264,10 @@ const helpers = {renderTime: (duration) => {
   seconds = (seconds < 10) ? "0" + seconds : seconds;
 
   return hours + ":" + minutes + ":" + seconds + "." + milliseconds;
-} 
+},
+uuid: () => {
+  return window.uuid.v4();
+}
 };
 
 export default App;
