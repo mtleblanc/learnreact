@@ -70,6 +70,44 @@ class TimerDashboard extends Component {
     })
   };
 
+  startTimer = (id) => () => {
+    this.setState({timers:
+      this.state.timers.map(t=> {
+        if(t.id === id) {
+          let newTimer = Object.assign({}, t);
+          if(newTimer.startTime === null) {
+            newTimer.startTime = new Date();
+          }
+          else {
+            // already started
+          }
+          return newTimer;
+        }
+        else return t;
+      })
+    })
+  };
+
+  stopTimer = (id) => () => {
+    this.setState({timers:
+      this.state.timers.map(t=> {
+        if(t.id === id) {
+          let newTimer = Object.assign({}, t);
+          if(newTimer.startTime === null) {
+            // already stopped
+          }
+          else {
+            const newElapsed = new Date() - newTimer.startTime;
+            newTimer.elapsed += newElapsed;
+            newTimer.startTime = null;
+          }
+          return newTimer;
+        }
+        else return t;
+      })
+    })
+  };
+
   render() {
     return (
       <div className='ui three column centered grid'>
@@ -79,6 +117,8 @@ class TimerDashboard extends Component {
             updateFunc={this.updateTimer}
             deleteFunc={this.deleteTimer}
             toggleFunc={this.toggleTimer}
+            startFunc={this.startTimer}
+            stopFunc={this.stopTimer}
           />
           <TimerForm isOpen={false} updateFunc={this.addTimer} />
         </div>
@@ -96,6 +136,8 @@ class TimerList extends Component {
         updateFunc={this.props.updateFunc}
         deleteFunc={this.props.deleteFunc(t.id)}
         toggleFunc={this.props.toggleFunc(t.id)}
+        startFunc={this.props.startFunc(t.id)}
+        stopFunc={this.props.stopFunc(t.id)}
       />
       );
   }
@@ -105,10 +147,10 @@ class TimerForm extends Component {
   state = { isOpen: false };
   openForm = () => this.setState({isOpen: true});
   closeForm = () => this.setState({isOpen:false});
-
+  updateFunc = (timer) => { this.props.updateFunc(timer); this.closeForm(); } 
   render() {
     if(this.state.isOpen)
-      return <TimerEditor closeFunc={this.closeForm} updateFunc={this.props.updateFunc}/>;
+      return <TimerEditor closeFunc={this.closeForm} updateFunc={this.updateFunc}/>;
     else
       return (
         <div className='ui basic content center aligned segment'>
@@ -124,7 +166,7 @@ class Timer extends Component {
   state = { isOpen: false };
   openForm = () => this.setState({isOpen: true});
   closeForm = () => this.setState({isOpen:false});
-
+  updateFunc = (timer) => { this.props.updateFunc(timer); this.closeForm(); }
   render() {
     if(this.state.isOpen)
       return <TimerEditor 
@@ -132,13 +174,15 @@ class Timer extends Component {
         title={this.props.timer.title}
         project={this.props.timer.project}
         closeFunc={this.closeForm} 
-        updateFunc={this.props.updateFunc} />;
+        updateFunc={this.updateFunc} />;
     else
       return <TimerDisplay
         timer={this.props.timer}
         editFunc={this.openForm}
         deleteFunc={this.props.deleteFunc}
         toggleFunc={this.props.toggleFunc}
+        startFunc={this.props.startFunc}
+        stopFunc={this.props.stopFunc}
       />;
   }
 }
@@ -150,7 +194,6 @@ class TimerEditor extends Component {
     };
   updateTitle = (evt) => this.setState({title: evt.target.value || ''});
   updateProject = (evt) => this.setState({project: evt.target.value || ''});
-  
 
   updateTimer = () => {
     this.props.updateFunc({
@@ -158,7 +201,6 @@ class TimerEditor extends Component {
       title: this.state.title,
       project: this.state.project,
     });
-    this.props.closeFunc();
   };
 
   render() {
@@ -235,6 +277,8 @@ class TimerDisplay extends Component {
         <TimerStartStop
           isRunning={this.props.timer.startTime !== null}
           toggleFunc={this.props.toggleFunc}
+          startFunc={this.props.startFunc}
+          stopFunc={this.props.stopFunc}
           />
       </div>
       );
@@ -243,10 +287,21 @@ class TimerDisplay extends Component {
 
 class TimerStartStop extends Component {
   render() {
-    const color = this.props.isRunning ? 'red' : 'blue';
-    const text = this.props.isRunning ? 'Stop' : 'Start';
+    let color;
+    let text;
+    let func;
+    if(this.props.isRunning) {
+      color = 'red';
+      text = 'Stop';
+      func = this.props.stopFunc;
+    }
+    else {
+      color = 'blue';
+      text = 'Start';
+      func = this.props.startFunc;
+    }
     return (
-        <div className={'ui bottom attached ' + color + ' basic button'} onClick={this.props.toggleFunc} >
+        <div className={'ui bottom attached ' + color + ' basic button'} onClick={func} >
           {text}
         </div>
         );
