@@ -46,29 +46,30 @@ class TimerDashboard extends Component {
       timers: []
   };
 
+  constructor(props) {
+    super(props);
+    store.subscribe(() => 
+      this.setState({ timers: store.getState() })
+    );
+  }
   updateTimer = (timer) => {
     store.dispatch({ type:'RENAME', id: timer.id, title: timer.title, project: timer.project })
-    this.setState({ timers: store.getState() });
   };
 
   addTimer = (timer) => {
     store.dispatch({ type:'CREATE', id: helpers.uuid(), title: timer.title, project: timer.project })
-    this.setState({ timers: store.getState() });
   };
 
   deleteTimer = (id) => () => {
     store.dispatch({ type:'DELETE', id: id })
-    this.setState({ timers: store.getState() });
   };
 
   startTimer = (id) => () => {
     store.dispatch({ type:'START', id: id })
-    this.setState({ timers: store.getState() });
   };
 
   stopTimer = (id) => () => {
     store.dispatch({ type:'STOP', id: id })
-    this.setState({ timers: store.getState() });
   };
 
   render() {
