@@ -1,7 +1,9 @@
 import React, { Component } from 'react';
-import './App.css';
+import ReactDOM from 'react-dom';
+import { createStore } from 'redux'
+import { Provider, connect } from 'react-redux'
 
-const { createStore } = window.Redux;
+/* Section: Reducers and Action Creators */
 
 const TimerReducer = (state, action) => {
   if(state && action.id !== state.id) return state;
@@ -31,89 +33,41 @@ const TimersReducer = (state = [], action) => {
   }
 };
 
-const store=createStore(TimersReducer);
+const updateTimer = (timer) => ({ type:'RENAME', id: timer.id, title: timer.title, project: timer.project });
+const createTimer = (timer) => ({ type:'CREATE', id: helpers.uuid(), title: timer.title, project: timer.project });
+const startTimer = (id) => ({ type: 'START', id: id });
+const stopTimer = (id) => ({ type: 'STOP', id: id });
+const deleteTimer = (id) => ({ type: 'DELETE', id: id });
 
-class App extends Component {
-  render() {
-    return (
-      <TimerDashboard />
-    );
-  }
-}
+/* Section: React */
 
-class TimerDashboard extends Component {
-  state = {
-      timers: []
-  };
-
-  constructor(props) {
-    super(props);
-    store.subscribe(() => 
-      this.setState({ timers: store.getState() })
-    );
-  }
-  updateTimer = (timer) => {
-    store.dispatch({ type:'RENAME', id: timer.id, title: timer.title, project: timer.project })
-  };
-
-  addTimer = (timer) => {
-    store.dispatch({ type:'CREATE', id: helpers.uuid(), title: timer.title, project: timer.project })
-  };
-
-  deleteTimer = (id) => () => {
-    store.dispatch({ type:'DELETE', id: id })
-  };
-
-  startTimer = (id) => () => {
-    store.dispatch({ type:'START', id: id })
-  };
-
-  stopTimer = (id) => () => {
-    store.dispatch({ type:'STOP', id: id })
-  };
-
-  render() {
-    return (
+const TimerDashboard = () => (
       <div className='ui three column centered grid'>
         <div className='column'>
-          <TimerList 
-            timers={this.state.timers} 
-            updateFunc={this.updateTimer}
-            deleteFunc={this.deleteTimer}
-            toggleFunc={this.toggleTimer}
-            startFunc={this.startTimer}
-            stopFunc={this.stopTimer}
-          />
-          <TimerForm isOpen={false} updateFunc={this.addTimer} />
+          <TimerListContainer />
+          <TimerCreaterContainer />
         </div>
       </div>
       );
-  }
-}
 
-class TimerList extends Component {
-  render() {
-    return this.props.timers.map(t=>
-      <Timer 
+const TimerListContainer = connect(
+  (state)=>({timers:state})
+  )((props) => 
+  props.timers.map(t=>
+      <TimerContainer 
         key={t.id}
         timer={t}
-        updateFunc={this.props.updateFunc}
-        deleteFunc={this.props.deleteFunc(t.id)}
-        startFunc={this.props.startFunc(t.id)}
-        stopFunc={this.props.stopFunc(t.id)}
       />
-      );
-  }
-}
+      ));
 
-class TimerForm extends Component {
+class TimerCreater extends Component {
   state = { isOpen: false };
   openForm = () => this.setState({isOpen: true});
   closeForm = () => this.setState({isOpen:false});
-  updateFunc = (timer) => { this.props.updateFunc(timer); this.closeForm(); } 
+  onSubmit = (timer) => { this.props.onSubmit(timer); this.closeForm(); } 
   render() {
     if(this.state.isOpen)
-      return <TimerEditor closeFunc={this.closeForm} updateFunc={this.updateFunc}/>;
+      return <TimerEditor onCancel={this.closeForm} onSubmit={this.onSubmit}/>;
     else
       return (
         <div className='ui basic content center aligned segment'>
@@ -125,44 +79,55 @@ class TimerForm extends Component {
   }
 }
 
+const TimerCreaterContainer = connect(
+  (state)=>({}),
+  (dispatch) => ({
+    onSubmit: (timer)=>dispatch(createTimer(timer))
+  }))(TimerCreater);
+
 class Timer extends Component {
-  state = { isOpen: false };
-  openForm = () => this.setState({isOpen: true});
-  closeForm = () => this.setState({isOpen:false});
-  updateFunc = (timer) => { this.props.updateFunc(timer); this.closeForm(); }
+  state = { isEditing: false };
+  editTimer = () => this.setState({isEditing: true});
+  displayTimer = () => this.setState({isEditing:false});
+  onSubmit = (timer) => { this.props.onSubmit(timer); this.displayTimer(); }
   render() {
-    if(this.state.isOpen)
+    if(this.state.isEditing)
       return <TimerEditor 
         id={this.props.timer.id}
         title={this.props.timer.title}
         project={this.props.timer.project}
-        closeFunc={this.closeForm} 
-        updateFunc={this.updateFunc} />;
+        onCancel={this.displayTimer}
+        onSubmit={this.onSubmit}
+      />
     else
       return <TimerDisplay
         timer={this.props.timer}
-        editFunc={this.openForm}
-        deleteFunc={this.props.deleteFunc}
-        toggleFunc={this.props.toggleFunc}
-        startFunc={this.props.startFunc}
-        stopFunc={this.props.stopFunc}
+        onEditClick={this.editTimer}
+        onDeleteClick={this.props.onDeleteClick}
+        onStartClick={this.props.onStartClick}
+        onStopClick={this.props.onStopClick}
       />;
   }
 }
 
-class TimerEditor extends Component {
-  state = {
-      title: this.props.title || '',
-      project: this.props.project || '',
-    };
-  updateTitle = (evt) => this.setState({title: evt.target.value || ''});
-  updateProject = (evt) => this.setState({project: evt.target.value || ''});
+const TimerContainer = connect( 
+    (state) => ({}), 
+    (dispatch, props) => 
+    ({
+      onSubmit: (timer) => dispatch(updateTimer(timer)),
+      onDeleteClick: () => dispatch(deleteTimer(props.timer.id)),
+      onStartClick: () => dispatch(startTimer(props.timer.id)),
+      onStopClick: () => dispatch(stopTimer(props.timer.id))
+    })
+  )(Timer);
 
-  updateTimer = () => {
-    this.props.updateFunc({
+class TimerEditor extends Component {
+
+  onSubmit = () => {
+    this.props.onSubmit({
       id: this.props.id,
-      title: this.state.title,
-      project: this.state.project,
+      title: this.refs.title.value,
+      project: this.refs.project.value,
     });
   };
 
@@ -174,17 +139,17 @@ class TimerEditor extends Component {
           <div className='ui form'>
             <div className='field'>
               <label>Title</label>
-              <input type='text' defaultValue={this.props.title} onChange={this.updateTitle} />
+              <input type='text' defaultValue={this.props.title} ref='title' />
             </div>
             <div className='field'>
               <label>Project</label>
-              <input type='text' defaultValue={this.props.project} onChange={this.updateProject}/>
+              <input type='text' defaultValue={this.props.project} ref='project' />
             </div>
             <div className='ui two bottom attached buttons'>
-              <button className='ui basic blue button' onClick={this.updateTimer}>
+              <button className='ui basic blue button' onClick={this.onSubmit}>
                 {submitText}
               </button>
-              <button className='ui basic button red' onClick={this.props.closeFunc}>
+              <button className='ui basic button red' onClick={this.props.onCancel}>
                 Cancel
               </button>
             </div>
@@ -229,10 +194,10 @@ class TimerDisplay extends Component {
             </h2>
           </div>
           <div className='extra content'>
-            <span className='right floated edit icon' onClick={this.props.editFunc}>
+            <span className='right floated edit icon' onClick={this.props.onEditClick}>
               <i className='edit icon' />
             </span>
-            <span className='right floated trash icon' onClick={this.props.deleteFunc}>
+            <span className='right floated trash icon' onClick={this.props.onDeleteClick}>
               <i className='trash icon' />
             </span>
           </div>
@@ -240,28 +205,27 @@ class TimerDisplay extends Component {
         <TimerStartStop
           isRunning={this.props.timer.startTime !== null}
           toggleFunc={this.props.toggleFunc}
-          startFunc={this.props.startFunc}
-          stopFunc={this.props.stopFunc}
+          startFunc={this.props.onStartClick}
+          stopFunc={this.props.onStopClick}
           />
       </div>
       );
   }
 }
 
-class TimerStartStop extends Component {
-  render() {
+const TimerStartStop = (props) => {
     let color;
     let text;
     let func;
-    if(this.props.isRunning) {
+    if(props.isRunning) {
       color = 'red';
       text = 'Stop';
-      func = this.props.stopFunc;
+      func = props.stopFunc;
     }
     else {
       color = 'blue';
       text = 'Start';
-      func = this.props.startFunc;
+      func = props.startFunc;
     }
     return (
         <div className={'ui bottom attached ' + color + ' basic button'} onClick={func} >
@@ -269,23 +233,28 @@ class TimerStartStop extends Component {
         </div>
         );
   }
-}
 
-const helpers = {renderTime: (duration) => {
-  let milliseconds = Math.floor((duration % 1000) / 100),
-    seconds = Math.floor((duration / 1000) % 60),
-    minutes = Math.floor((duration / (1000 * 60)) % 60),
-    hours = Math.floor((duration / (1000 * 60 * 60)) % 24);
+const helpers = {
+  renderTime: (duration) => {
+    let milliseconds = Math.floor((duration % 1000) / 100),
+      seconds = Math.floor((duration / 1000) % 60),
+      minutes = Math.floor((duration / (1000 * 60)) % 60),
+      hours = Math.floor((duration / (1000 * 60 * 60)) % 24);
 
-  hours = (hours < 10) ? "0" + hours : hours;
-  minutes = (minutes < 10) ? "0" + minutes : minutes;
-  seconds = (seconds < 10) ? "0" + seconds : seconds;
+    hours = (hours < 10) ? "0" + hours : hours;
+    minutes = (minutes < 10) ? "0" + minutes : minutes;
+    seconds = (seconds < 10) ? "0" + seconds : seconds;
 
-  return hours + ":" + minutes + ":" + seconds + "." + milliseconds;
-},
-uuid: () => {
-  return window.uuid.v4();
-}
+    return hours + ":" + minutes + ":" + seconds + "." + milliseconds;
+  },
+  uuid: () => {
+    return window.uuid.v4();
+  }
 };
 
-export default App;
+function Run() {
+  const store = createStore(TimersReducer);
+  ReactDOM.render(<Provider store={store}><TimerDashboard /></Provider>, document.getElementById('root'));
+}
+
+export default Run;
