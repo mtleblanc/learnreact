@@ -2,6 +2,7 @@
   "name": "timer-redux",
   "version": "0.1.0",
   "private": true,
+  "proxy": "http://localhost:4400/",
   "dependencies": {
     "react": "^16.6.3",
     "react-dom": "^16.6.3",

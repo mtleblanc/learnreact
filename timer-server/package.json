@@ -1,0 +1,14 @@
+{
+	"name": "timer-server",
+	"version": "1.0.0",
+	"description": "Simple json backed server for timer app",
+	"main": "app.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"author": "Michael LeBlanc",
+	"license": "GPL",
+	"dependencies": {
+		"express": "^4.16.4"
+	}
+}
