@@ -53,7 +53,7 @@ app.post("/api/timers/start", (req,res,next) => {
 		return;
 	}
 	fs.readFile(DATA_FILE, (err, data)=> {
-		const timers = JSON.parse(data);
+		let timers = JSON.parse(data);
 		if(!timers.some(t=>t.id === content.id)) {
 			res.status(404).send();
 			return;
@@ -61,7 +61,7 @@ app.post("/api/timers/start", (req,res,next) => {
 		timers = timers.map(t=>{
 			if(t.id === content.id) {
 				if(t.startTime === null)
-					t.startTime = new Date();
+					t.startTime = new Date().getTime();
 			}
 			return t;
 		});
@@ -80,7 +80,7 @@ app.post("/api/timers/stop", (req,res,next) => {
 		return;
 	}
 	fs.readFile(DATA_FILE, (err, data)=> {
-		const timers = JSON.parse(data);
+		let timers = JSON.parse(data);
 		if(!timers.some(t=>t.id === content.id)) {
 			res.status(404).send();
 			return;
@@ -88,7 +88,7 @@ app.post("/api/timers/stop", (req,res,next) => {
 		timers = timers.map(t=>{
 			if(t.id === content.id) {
 				if(t.startTime !== null) {
-					t.elapsed += new Date() - t.startTime;
+					t.elapsed = t.elapsed + (new Date().getTime() - t.startTime);
 					t.startTime = null;
 				}
 			}
@@ -109,7 +109,7 @@ app.put("/api/timers", (req,res,next) => {
 		return;
 	}
 	fs.readFile(DATA_FILE, (err, data)=> {
-		const timers = JSON.parse(data);
+		let timers = JSON.parse(data);
 		if(!timers.some(t=>t.id === content.id)) {
 			res.status(404).send();
 			return;
@@ -136,7 +136,7 @@ app.delete("/api/timers", (req,res,next) => {
 		return;
 	}
 	fs.readFile(DATA_FILE, (err, data)=> {
-		const timers = JSON.parse(data);
+		let timers = JSON.parse(data);
 		if(!timers.some(t=>t.id === content.id)) {
 			res.status(404).send();
 			return;

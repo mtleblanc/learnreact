@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-import { createStore } from 'redux'
+import { createStore, applyMiddleware } from 'redux'
 import { Provider, connect } from 'react-redux'
 
 /* Section: Reducers and Action Creators */
@@ -24,6 +24,8 @@ const TimerReducer = (state, action) => {
 
 const TimersReducer = (state = [], action) => {
   switch (action.type) {
+    case 'SET_STATE':
+      return action.state;
     case 'CREATE': 
       return [ ...state, TimerReducer(null, action) ];
     case 'DELETE' : 
@@ -38,6 +40,48 @@ const createTimer = (timer) => ({ type:'CREATE', id: helpers.uuid(), title: time
 const startTimer = (id) => ({ type: 'START', id: id });
 const stopTimer = (id) => ({ type: 'STOP', id: id });
 const deleteTimer = (id) => ({ type: 'DELETE', id: id });
+
+/* section: Action to api requests */
+
+const craeteApiPost = (endPoint, method, data, callBack) => {
+  return fetch(endPoint, {
+      method: method,
+      body: data ? JSON.stringify(data) : undefined,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    }).then(callBack);
+}
+
+/* Section: Middleware */
+
+const postToServer = store => next => action => {
+  switch (action.type) {
+    case 'START':
+      craeteApiPost('api/timers/start', 'post' , {id : action.id} );
+      break;
+    case 'STOP':
+      craeteApiPost('api/timers/stop', 'post', {id : action.id} );
+      break;
+    case 'RENAME':
+      craeteApiPost('api/timers', 'put', {id : action.id, title: action.title, project: action.project} );
+      break;
+    case 'CREATE':
+      craeteApiPost('api/timers', 'post', {id : action.id, title: action.title, project: action.project} );
+      break;
+    case 'DELETE' : 
+      craeteApiPost('api/timers', 'delete', {id : action.id} );
+      break;
+    default: break;
+  }
+  return next(action);
+}
+
+/* Section: Sync with server */
+const setToServerState = store => endPoint => () => {
+  craeteApiPost(endPoint, 'get', undefined, d=> d.json().then(t=>store.dispatch({type: "SET_STATE", state: t})));
+}
 
 /* Section: React */
 
@@ -253,7 +297,8 @@ const helpers = {
 };
 
 function Run() {
-  const store = createStore(TimersReducer);
+  const store = createStore(TimersReducer, applyMiddleware(postToServer));
+  setInterval(setToServerState(store)('/api/timers'), 1000);
   ReactDOM.render(<Provider store={store}><TimerDashboard /></Provider>, document.getElementById('root'));
 }
 
