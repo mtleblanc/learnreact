@@ -10,10 +10,10 @@ const TimerReducer = (state, action) => {
   switch (action.type) {
     case 'START':
       if(state.startTime !== null) return state;
-      else return { ...state, startTime: new Date() };
+      else return { ...state, startTime: action.time || new Date().getTime() };
     case 'STOP':
       if(state.startTime === null) return state;
-      else return { ...state, startTime: null, elapsed: state.elapsed + (new Date() - state.startTime) };
+      else return { ...state, startTime: null, elapsed: state.elapsed + (action.time || new Date().getTime()) - state.startTime };
     case 'RENAME':
       return { ...state, title: action.title, project: action.project };
     case 'CREATE':
@@ -37,8 +37,8 @@ const TimersReducer = (state = [], action) => {
 
 const updateTimer = (timer) => ({ type:'RENAME', id: timer.id, title: timer.title, project: timer.project });
 const createTimer = (timer) => ({ type:'CREATE', id: helpers.uuid(), title: timer.title, project: timer.project });
-const startTimer = (id) => ({ type: 'START', id: id });
-const stopTimer = (id) => ({ type: 'STOP', id: id });
+const startTimer = (id) => ({ type: 'START', id: id, time: new Date().getTime() });
+const stopTimer = (id) => ({ type: 'STOP', id: id, time: new Date().getTime() });
 const deleteTimer = (id) => ({ type: 'DELETE', id: id });
 
 /* section: Action to api requests */
@@ -59,10 +59,10 @@ const craeteApiPost = (endPoint, method, data, callBack) => {
 const postToServer = store => next => action => {
   switch (action.type) {
     case 'START':
-      craeteApiPost('api/timers/start', 'post' , {id : action.id} );
+      craeteApiPost('api/timers/start', 'post' , {id : action.id, time: action.time} );
       break;
     case 'STOP':
-      craeteApiPost('api/timers/stop', 'post', {id : action.id} );
+      craeteApiPost('api/timers/stop', 'post', {id : action.id, time: action.time} );
       break;
     case 'RENAME':
       craeteApiPost('api/timers', 'put', {id : action.id, title: action.title, project: action.project} );

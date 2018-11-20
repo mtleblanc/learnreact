@@ -47,6 +47,7 @@ app.post("/api/timers", (req, res, next) => {
 
 app.post("/api/timers/start", (req,res,next) => {
 	const content = req.body;
+	const currentTime = content.time || new Date().getTime();
 	if(!content.id)
 	{
 		res.status(400).send();
@@ -61,7 +62,7 @@ app.post("/api/timers/start", (req,res,next) => {
 		timers = timers.map(t=>{
 			if(t.id === content.id) {
 				if(t.startTime === null)
-					t.startTime = new Date().getTime();
+					t.startTime = currentTime;
 			}
 			return t;
 		});
@@ -74,6 +75,7 @@ app.post("/api/timers/start", (req,res,next) => {
 
 app.post("/api/timers/stop", (req,res,next) => {
 	const content = req.body;
+	const currentTime = content.time || new Date().getTime();
 	if(!content.id)
 	{
 		res.status(400).send();
@@ -88,7 +90,7 @@ app.post("/api/timers/stop", (req,res,next) => {
 		timers = timers.map(t=>{
 			if(t.id === content.id) {
 				if(t.startTime !== null) {
-					t.elapsed = t.elapsed + (new Date().getTime() - t.startTime);
+					t.elapsed = t.elapsed + (currentTime - t.startTime);
 					t.startTime = null;
 				}
 			}
